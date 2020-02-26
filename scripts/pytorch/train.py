@@ -26,6 +26,7 @@ parser = argparse.ArgumentParser()
 
 # data organization parameters
 parser.add_argument('datadir', help='base data directory')
+parser.add_argument('--datagen', default='scan_to_scan', help='Data generator to read the dataset. Options: "scan-to-scan", "atlas", "intra-patient"')
 parser.add_argument('--atlas', help='atlas filename (default: data/atlas_norm.npz)')
 parser.add_argument('--model-dir', default='models', help='model output directory (default: models)')
 
@@ -57,13 +58,16 @@ train_vol_names = glob.glob(os.path.join(args.datadir, '*.npz'))
 random.shuffle(train_vol_names)  # shuffle volume list
 assert len(train_vol_names) > 0, 'Could not find any training data'
 
-if args.atlas:
+if args.datagen == 'atlas' or args.atlas:
     # scan-to-atlas generator
     atlas = np.load(args.atlas)['vol'][np.newaxis, ..., np.newaxis]
     generator = vxm.generators.scan_to_atlas(train_vol_names, atlas, batch_size=args.batch_size, bidir=bidir)
-else:
+elif args.datagen == 'scan-to-scan':
     # scan-to-scan generator
     generator = vxm.generators.scan_to_scan(train_vol_names, batch_size=args.batch_size, bidir=bidir)
+elif args.datagen == 'intra-patient':
+    # TODO
+    pass
 
 # extract shape from sampled input
 inshape = next(generator)[0][0].shape[1:-1]
